@@ -19,6 +19,7 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
+
 # Dependencies
 
 ```{r}
@@ -29,26 +30,50 @@ library(stringr)
 
 ```
 
+
+#neuer versuch alle zeilen zu laden
+```{r}
+data_amp_raw <- read_csv("../data/raw/data_amp_raw.csv", n_max = 10000) |> 
+  janitor::clean_names()
+nrow(data_amp_raw)
+
+```
+
+
+
 # Get data
 
 ```{r}
 
 # demographics
-data_demographics_raw <- read_csv("../../../data/AMP study/raw/data_demographics_raw.csv") |>
+data_demographics_raw <- read_csv("../data/raw/data_demographics_raw.csv", n_max = 10000) |> 
   janitor::clean_names()
 
-# data_demographics_raw_messy <- read_csv("../../../data/AMP study/raw/data_demographics_raw_messy.csv", skip = 2) |>
+# Uncomment if you need this dataset
+# data_demographics_raw_messy <- read_csv("../data/raw/data_demographics_raw.csv", skip = 2, n_max = 10000) |> 
 #   janitor::clean_names()
 
 # self report measure
-data_selfreport_raw <- read_csv("../../../data/AMP study/raw/data_selfreport_raw.csv") |>
+data_selfreport_raw <- read_csv("../data/raw/data_selfreport_raw.csv", n_max = 10000) |> 
   janitor::clean_names()
 
 # affect attribution procedure
-data_amp_raw <- read_csv("../../../data/AMP study/raw/data_amp_raw.csv") |>
+data_amp_raw <- read_csv("../data/raw/data_amp_raw.csv", n_max = 10000) |> 
   janitor::clean_names()
 
+
 ```
+
+
+
+#check ob die daten wirklich nur 200 zeilen haben oder obs die einfach nur so anzeigt: 
+```{r}
+
+nrow(data_demographics_raw)
+nrow(data_selfreport_raw)
+nrow(data_amp_raw)
+```
+
 
 # Demographics
 
@@ -160,8 +185,20 @@ data_processed <- data_processed_before_exclusions |>
                                          is.na(age) ~ "exclude", 
                                          is.na(gender) ~ "exclude",
                                          exclude_amp_performance == "exclude" ~ "exclude",
-                                         exclude_duplicate_data == "exclude" ~ "exclude",
+                                         exclude_duplicate_data == "exclude" ~ "exclude", is.na(like) ~ "exclude",
+                                         is.na(positive) ~ "exclude", 
+                                         is.na(prefer) ~ "exclude",
                                          TRUE ~ "include"))
+
+```
+#write to disk neue Lösung weil andere nicht geht
+
+```{r}
+# Create the directory if it doesn't exist
+dir.create("/Users/tobiasboschung/Documents/GitHub/dpm-assignments/week 7/implicit evaluations study/data/processed", showWarnings = FALSE, recursive = TRUE)
+
+# Save the processed data to the specified directory
+write_csv(data_processed, "/Users/tobiasboschung/Documents/GitHub/dpm-assignments/week 7/implicit evaluations study/data/processed/data_processed.csv")
 
 ```
 
@@ -170,12 +207,67 @@ data_processed <- data_processed_before_exclusions |>
 ```{r}
 
 # in case this dir doesn't exist, create it
-dir.create("../../../data/AMP study/processed/")
+dir.create("../data/processed/")
 
 # save data to disk in that dir
-write_csv(data_processed, "../../../data/AMP study/processed/data_processed.csv")
+write_csv(data_processed, "../data/processed/data_processed.csv")
+
+          
+          
+```
+
+
+
+#Find out how many trials are the average based on the data_amp_raw file
+
+
+
+```{r}
+# Step 1: Identify the mean number of trials per subject for 'test' blockcode
+amp_test_data <- subset(data_amp_raw, blockcode == "test")
+trial_counts_per_subject <- table(amp_test_data$subject)
+
+# Summary statistics for trial counts
+summary(as.numeric(trial_counts_per_subject))
+
+# Step 2: Add exclusion criteria based on the "correct" number of trials (e.g., 72)
+correct_trial_count <- 72
+amp_test_data$exclude_based_on_trial_count <- "include"
+
+# Mark subjects for exclusion if their trial count doesn't match the correct_trial_count
+subjects_to_exclude <- names(trial_counts_per_subject)[as.numeric(trial_counts_per_subject) != correct_trial_count]
+amp_test_data$exclude_based_on_trial_count[amp_test_data$subject %in% subjects_to_exclude] <- "exclude"
+
+# Save the updated data
+write.csv(amp_test_data, "data_amp_raw_with_exclusions.csv")
 
 ```
+#i want to summarise the number of subjects who would get excluded
+
+```{r}
+# Summarize the inclusion and exclusion status for each subject
+inclusion_summary <- amp_test_data %>% 
+  group_by(subject) %>% 
+  summarise(exclude_status = max(exclude_based_on_trial_count))
+
+# Count the number of subjects included and excluded
+table(inclusion_summary$exclude_status)
+```
+
+# now i want to see the ids of the participants who´d get excluded
+```{r}
+# List the subject IDs that are marked for exclusion
+excluded_subject_ids <- inclusion_summary %>% 
+  filter(exclude_status == "exclude") %>% 
+  select(subject)
+
+print("Subjects to be excluded:")
+print(excluded_subject_ids)
+
+```
+
+
+
 
 # Session info
 
