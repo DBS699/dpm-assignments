@@ -11,7 +11,6 @@ output:
     toc: yes
     toc_float: yes
 ---
-#Set options to suppress messages and warnings in the knitr document.
 
 ```{r, include=FALSE}
 
@@ -20,20 +19,19 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-#Load Packages
+# Dependencies
 
 ```{r}
-#Load necessary R packages including tidyverse, janitor for clean_names(), and stringr.
+
 library(tidyverse)
 library(janitor) # for clean_names()
 library(stringr)
 
 ```
 
-# Get data: 
+# Get data
 
 ```{r}
-#Load and clean CSV files for demographics, self-report measures, and affect attribution procedures using the janitor::clean_names() function.
 
 # demographics
 data_demographics_raw <- read_csv("../data/raw/data_demographics_raw.csv") |>
@@ -52,11 +50,9 @@ data_amp_raw <- read_csv("../data/raw/data_amp_raw.csv") |>
 
 ```
 
-# Demographics: 
-
+# Demographics
 
 ```{r}
-###Created a new data frame, dat_age_gender, by selecting specific columns from data_demographics_raw, pivoting data, and cleaning the gender and age columns using various transformations and conditional logic.
 
 dat_age_gender <- data_demographics_raw |>
   select(subject, date, time, trialcode, response) |>
@@ -77,11 +73,9 @@ dat_age_gender <- data_demographics_raw |>
 
 # Exclusions / data quality
 
-## AMP: 
-
+## AMP
 
 ```{r}
-#Created two data frames: data_amp_performance_criteria and data_amp_completeness. In data_amp_performance_criteria, filtered and processed data_amp_raw to calculate the proportion of fast trials and marked them for exclusion based on a threshold.In data_amp_completeness, determined the modal number of trials for each subject and marked them for inclusion or exclusion based on a threshold.
 
 data_amp_performance_criteria <- data_amp_raw |> 
   filter(blockcode != "practice", 
@@ -109,10 +103,9 @@ data_amp_completeness <- data_amp_raw |>
 - One participant with 8 trials appears to be a partial completion (check raw data?)
 - One participant with 144 trials appears to be a repeat participant. I've chosen to exclude them entirely, but you could also have a more elaborate strategy where you retain only their first completion.
 
-# Self-reports:
+# Self-reports
 
 ```{r}
-#Processed self-report trial-level data by selecting specific columns, filtering relevant trialcodes, renaming columns, and converting responses to numeric values. Then, calculated the mean evaluation score for each subject and combined the trial-level data with mean scores into the data_selfreport_scored data frame using a full join.
 
 # trial level data
 data_selfreport_trial_level <- data_selfreport_raw |>
@@ -137,13 +130,11 @@ data_selfreport_scored <-
 
 ```
 
-
-# Affect Misattribution Procedure: 
+# Affect Misattribution Procedure
 
 TODO extract evaluations on the AMP test blocks and convert to an overall bias score
 
 ```{r}
-#Processed data_amp_raw to calculate the AMP score by selecting specific columns, filtering relevant rows, and performing calculations to determine prime congruence. Conducted sanity checks to ensure the AMP score is correctly calculated, numeric, and bounded between 0 and 1.
 
 data_amp_score_congruence <- data_amp_raw |> 
   select(subject, evaluative_response = correct, trialcode, blockcode) |> 
@@ -179,10 +170,9 @@ data_amp_score |>
 
 ```
 
-# Combine: 
+# Combine
 
 ```{r}
-#Combined all the previously created data frames, including dat_age_gender, data_selfreport_scored, data_amp_score, data_amp_performance_criteria, and data_amp_completeness. Also flagged subjects with more than one row in the wide-format data as potential exclusions.
 
 # combine all dfs created in the previous chunks
 data_processed_temp <- dat_age_gender |>
@@ -204,11 +194,9 @@ data_processed_before_exclusions <- data_processed_temp |>
 
 ```
 
-# Define master exclusions: 
+# Define master exclusions
 
 ```{r}
-
-#Created a master exclusion variable, 'exclude_participant,' based on various criteria such as missing data, test values, and previous exclusion flags from different data frames to determine which participants to include or exclude in the analysis.
 
 # create a master exclude_participant variable
 data_processed <- data_processed_before_exclusions |>
@@ -230,7 +218,6 @@ data_processed <- data_processed_before_exclusions |>
 # Write to disk
 
 ```{r}
-# Created a directory for processed data if it doesn't exist and saved the 'data_processed' data frame as a CSV file named 'data_processed.csv' in the '../data/processed/' directory.
 
 # in case this dir doesn't exist, create it
 dir.create("../data/processed/")
@@ -240,23 +227,10 @@ write_csv(data_processed, "../data/processed/data_processed.csv")
 
 ```
 
-\TODO The template should then be filled in manually with descriptions of each variable so that someone else could understand what these variables represent.
-```{r}
-#Generated a codebook template by extracting column names from the 'data_processed' data frame and saving it as an Excel file named 'data_processed_codebook.xlsx' in the '../data/processed/' directory, which can be manually filled with descriptions of each variable.
-
-library("openxlsx")
-if(!file.exists("../data/processed/data_processed_codebook.xlsx")){
-  # convert the column names to a df
-  codebook_template <- data.frame(variable = colnames(data_processed)) |>
-    mutate(explanation = NA)
-  # write to disk as an excel file
-  write.xlsx(codebook_template, file = "../data/processed/data_processed_codebook.xlsx")
-}
-```
 # Session info
 
 ```{r}
-#Provid session information:
+
 sessionInfo()
 
 ```

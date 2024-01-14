@@ -1,0 +1,201 @@
+---
+title: "Plot assignment"
+author: "Template: Ian Hussey; content: [Student name]"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies
+
+```{r}
+
+library(tidyverse)
+
+```
+
+# Instructions
+
+The goal of this exercise is to produce both good and bad examples of plots *and to be explicit about what makes them good or bad*. 
+
+The data can be real or fabricated. The plots can convey realistic or silly messages - but they must convey them clearly. You can get real data from many sources. A good one is the open science framekwork (osf.io). You can also simply make up data, either by hand or using simulation functions (e.g., `rnorm`) or the many simulation packages. If simulating data, ensure that you (a) use set.seed() to make it reproudbile, and (b) save a copy of the final data that you're using to disk and then reload it in the script so that the plot is reproducible.
+
+The goal is neither to reproduce the types of plots that you most often see in journals (bar plots, etc.) nor to use a very fancy looking plot just for the sake of it - if it is very unlikely that you'd ever be able to use the plot to convey a research finding in an article, blog, poster, tweet, infographic or otherwise, it's probably not a good choice either.
+
+The plots must be reproducible. Provide the data as well as the code to reporduce them. The plots should also be saved as individual images (pdf or png).
+
+Under each plot, here in the RMarkdown, briefly explain what types of analysis the plot is suitable for, what elements of the results the plot attempts to clearly convey. For the bad plot, do the opposite: emphasise what features of the results the plot obscures or makes unclear. In doing so, communicate to me that you understand what makes a good plot to convey the results of quantiative analyses to viewers.
+
+Consider making use of the many extensions to ggplot2, e.g.:
+
+- https://r-graph-gallery.com
+- https://krzjoa.github.io/awesome-r-dataviz/#/
+- ggdist https://mjskay.github.io/ggdist/
+- ggrepel
+- ggpubr
+- see
+- ggsignif
+- and others: https://exts.ggplot2.tidyverse.org/gallery/
+
+# Good plot
+
+```{r}
+# Load the packages
+
+library(magick)
+library(tidyverse)
+library(ggplot2)
+library(datasets)
+library(ggbeeswarm)
+library(viridis)
+library(grid) 
+library(ggmagnify)
+library(viridis)
+library(ggplot2)
+library(gapminder)
+
+# Load the Gapminder dataset
+data(gapminder)
+
+# Calculate the mean GDP per Capita for each continent
+mean_gdp <- gapminder %>%
+    group_by(continent) %>%
+    summarise(mean_gdpPercap = mean(gdpPercap, na.rm = TRUE)) # Ensure NA values are removed
+
+# Create the raincloud plot with smaller mean GDP annotations
+good_plot <- ggplot(gapminder, aes(x = continent, y = gdpPercap, fill = continent)) +
+    geom_violin(trim = FALSE) +
+    geom_jitter(aes(color = continent), width = 0.2, size = 1, alpha = 0.5) +
+    scale_color_brewer(palette = "Set3") +
+    scale_fill_brewer(palette = "Dark2") +
+    scale_y_continuous(breaks = seq(0, max(gapminder$gdpPercap, na.rm = TRUE), by = 10000)) + # More breaks on the y-axis
+    theme_minimal() +
+    theme(legend.position = "none") +
+    ylab("GDP per Capita") +
+    xlab("Continent") +
+    ggtitle("Comparison of GDP per Capita Across Continents") +
+    annotate("text", x = Inf, y = Inf, label = "Note: Points are jittered for clarity", hjust = 1.1, vjust = 2, size = 3) +
+    geom_text(data = mean_gdp, aes(x = continent, y = -20000, label = paste("Mean:", round(mean_gdpPercap, 2))), size = 2.5, vjust = -0.5) # Adjust mean GDP text position with smaller text
+print(good_plot)
+
+```
+## Explanation of the good plot
+
+Explanation of the Gapminder Raincloud Plot
+
+The Gapminder dataset, a collection of global development data, includes metrics such as GDP per Capita, life expectancy, and population across various countries and continents. In this visualization, we focus on the GDP per Capita, providing insights into economic status and living standards across different continents.
+
+This "RaincloudPlot" is particularly effective for comparative analysis, helping to understand the distribution and central tendencies of GDP per Capita for each continent. It's ideal for visualizing how GDP per Capita varies, revealing the variation (spread) and central tendency (mean) of the data.
+
+Violin Plot: Shows the full distribution of GDP per Capita, making it easy to see the density at different values. This helps in understanding the shape of the distribution, including any skewness or multimodality.
+
+Jittered Points: Display individual data points, colored by continent, to highlight the actual data distribution. This addition allows identification of outliers and shows the density of data points at different GDP levels.
+
+Mean Annotations: The mean GDP per Capita for each continent is annotated on the plot. This provides a quick reference to the average economic status of the continents, enhancing the comparative aspect of the visualization.
+
+Color Palette: The use of the 'Set3' and 'Dark2' color palettes ensures a distinct and visually appealing representation of the data. These palettes also maintain clarity when the plot is viewed in black-and-white.
+
+Minimalistic Theme: The theme is chosen for its clean and uncluttered look, which aids in focusing on the data itself. The removal of the legend avoids redundancy, as the continents are clearly labeled on the x-axis.
+
+Axis Labels and Title: Simple and descriptive labels and titles are used for easy comprehension. The axis labels clearly denote the metrics being compared (GDP per Capita vs. Continent), and the title succinctly describes the plot's purpose.
+
+This combination of elements makes the "RaincloudPlot" an effective tool for communicating differences in GDP per Capita across continents. The plot aims to provide a clear and comprehensive view of the economic disparities and standards in different parts of the world.
+
+
+
+
+# bad plot
+
+```{r}
+# Load the packages
+library(magick)
+library(tidyverse)
+library(ggplot2)
+library(datasets)
+library(ggbeeswarm)
+library(viridis)
+library(grid)
+library(ggmagnify)
+library(viridis)
+library(ggplot2)
+library(gapminder)
+
+# Load the Gapminder dataset
+data(gapminder)
+
+ # Define the area to be magnified
+from <- c(xmin = 1, xmax = 2, ymin = 3500, ymax = 4000)
+# Define where to place the magnified inset on the plot
+to <- c(xmin = 2, xmax = 3, ymin = 3000, ymax = 3500)
+
+# Create the raincloud plot with even less distinct colors
+bad_plot <- ggplot(gapminder, aes(x = continent, y = gdpPercap, fill = continent)) +
+  geom_violin(trim = FALSE, alpha = 0.05) +  # Very low transparency for the violin plot
+  geom_jitter(aes(color = continent), width = 1, size = 3, alpha = 0.3) +  # Lower transparency for the dots
+  scale_color_manual(values = c("gray40", "gray40", "gray40", "gray40", "gray40")) +  # Use almost identical colors
+  scale_fill_manual(values = c("gray90", "gray90", "gray90", "gray90", "gray90")) +  # Almost identical fill colors
+  scale_y_continuous(breaks = seq(0, max(gapminder$gdpPercap, na.rm = TRUE), by = 4567)) +
+  theme_minimal() + 
+  geom_magnify(from =  from, to = to) +
+  theme(legend.position = "none") +
+  ylab("GDP per Capita") +
+  xlab("ContinentContinentContinentContinentContinent") +
+  ggtitle("Comparison of GDP per Capita Across Continents") +
+  annotate("text", x = Inf, y = Inf, label = "Note: Very indistinct colors", hjust = 1.1, vjust = 2, size = 3) +
+  geom_text(data = mean_gdp, aes(x = continent, y = -80000, label = paste("Mean:", round(mean_gdpPercap, 2))), size = 0.5, vjust = -0.5)  # Use tiny text for mean GDP
+
+print(bad_plot)
+
+
+
+```
+## Explanation for the bad plot 
+I created a bad plot by making several design choices that make it visually unattractive and challenging to understand:
+
+I set a very low transparency for both the violin plot and jittered points (alpha = 0.05 and alpha = 0.3), which makes it difficult to distinguish individual data points and see the data distribution clearly.
+I used nearly identical colors for the dots (gray40) and fill (gray90), making it nearly impossible to differentiate data points based on color alone.
+I chose an irregular sequence for the y-axis breaks (by = 4567), which adds unnecessary complexity to the plot and doesn't convey meaningful information.
+I made the x-axis label excessively long ("ContinentContinentContinentContinentContinent"), which not only looks bad but also makes it hard to read and comprehend.
+I added the geom_magnify function, which magnifies a specific area of the plot. However, in this context, it only complicates the plot without providing any valuable insights.
+I used very small text (size = 0.5) for the mean GDP annotations, making it challenging to read and understand the critical information.
+Overall, these design choices collectively create a visually unappealing and confusing plot that fails to effectively communicate the data. Striking a balance between aesthetics and clarity is crucial when creating data visualizations.
+
+
+# Write to disk
+
+Write to disk as a .pdf 
+
+Name them "plot_good_[Tobias]" and "plot_bad_[Tobias]".
+
+```{r}
+
+# Save GoodPenguinPlot as a PDF
+ggsave("plot_good_[Tobias].pdf", plot = good_plot)
+
+# Save BadPenguinPlot as a PDF
+ggsave("plot_bad_[Tobias].pdf", plot = bad_plot)
+
+
+
+
+```
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```

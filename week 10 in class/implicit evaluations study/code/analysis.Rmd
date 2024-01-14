@@ -26,7 +26,7 @@ options(scipen = 999)
 # Dependencies
 
 ```{r}
-#load packages
+
 library(tidyverse)
 library(knitr)
 library(kableExtra)
@@ -35,11 +35,11 @@ library(scales)
 
 ```
 
-#Data
-##Load the processed data and apply the global exclusions.
+# Data
+
+Load the processed data and apply the global exclusions.
 
 ```{r}
-#Reads a CSV file into 'data_processed' and creates 'data_processed_after_exclusions' by filtering for rows with 'exclude_participant' set to "include."
 
 data_processed <- read_csv("../data/processed/data_processed.csv")
 
@@ -53,12 +53,11 @@ data_processed_after_exclusions <- data_processed |>
 ## Sample size before exclusions
 
 ```{r}
-#Created a table counting the number of rows in the 'data_processed' data frame and displayed it in a classic Kable format with the header "Whole sample."
 
 data_processed |>
   count(name = "n") |>
   kable() |>
-  add_header_above(header = c("Whole sample" = 1)) |> #adding a header to the table
+  add_header_above(header = c("Whole sample" = 1)) |> # note that you can add header rows to tables like this. The "1" indicates the number of columns the header should span. The sum of these numbers must equal the number of columns or you'll get an error.
   kable_classic(full_width = FALSE)
 
 ```
@@ -68,7 +67,6 @@ data_processed |>
 Sample used in subsequent analyses
 
 ```{r}
-#Created a table counting the number of rows in the 'data_processed_after_ exclusions' data frame and displayed it in a classic Kable format with the header "For analysis"
 
 data_processed_after_exclusions |>
   count(name = "n") |>
@@ -81,7 +79,7 @@ data_processed_after_exclusions |>
 ## Age
 
 ```{r}
-#Calculated the mean and standard deviation (SD) of the 'age' variable in the 'data_processed_after_exclusions' data frame after converting it to numeric format, rounded the results to one decimal place, and presented them in a table with the header "Age."
+
 data_processed_after_exclusions |>
   mutate(age = as.numeric(age)) |>
   summarise(Mean = mean(age, na.rm = TRUE),
@@ -96,7 +94,6 @@ data_processed_after_exclusions |>
 ## Gender
 
 ```{r}
-#Renamed the 'gender' column to 'Gender,' then grouped the 'data_processed_after_exclusions' data frame by 'Gender,' calculated the count (n) for each gender category, calculated the percentage of each category, changed the case of the 'Gender' variable for better printing, and presented the results in a table.
 
 data_processed_after_exclusions |> 
   rename(Gender = gender) |>
@@ -115,37 +112,39 @@ Descriptive statistics and plots of the measures (excluding the demographics var
 
 ## Self-reported evaluations
 
-### Descriptive stats and t-test between men and women
+### Descriptive stats
 
 ```{r}
-#In this code snippet, descriptive statistics and a t-test are conducted on self-reported evaluations, specifically focusing on gender differences between men and women
 
-# filtering gender of the data_processed after exclusions data
-data_male_female <- data_processed_after_exclusions %>%
-  filter(gender %in% c("male", "female")) %>%
-  select(gender, mean_evaluation) %>%
-  na.omit()  # Ensure there are no missing values in the variables of interest
+# overall self-reported evaluations
+dat_mean_ratings <- data_processed_after_exclusions |>
+  summarise(Mean = mean(mean_evaluation, na.rm = TRUE),
+            SD = sd(mean_evaluation, na.rm = TRUE),
+            n = n()) |>
+  mutate(group = "Full sample")
 
-# Check the number of observations for each group
-print(data_male_female %>% count(gender))
+# self-reported evaluations by gender category
+dat_mean_ratings_by_gender <- data_processed_after_exclusions |>
+  group_by(group = gender) |>
+  summarise(Mean = mean(mean_evaluation, na.rm = TRUE),
+            SD = sd(mean_evaluation, na.rm = TRUE),
+            n = n())
 
-# Run the t-test if each group has sufficient data, added this because i had issues with this beforehand.
-if(all(data_male_female %>% count(gender) >= 2)) {
-  t_test_result <- t.test(mean_evaluation ~ gender, data = data_male_female, var.equal = FALSE)
-  print(t_test_result)
-} else {
-  print("Not enough data to perform t-test") 
-
-}
+# combine both into one table
+bind_rows(dat_mean_ratings,
+          dat_mean_ratings_by_gender) |>
+  select(Subset = group, Mean, SD, n) |> # select variables of interest, and rename one 
+  mutate(Subset = stringr::str_to_sentence(Subset)) |> # Change the case of the Subset variable so that it prints nicely
+  mutate_if(is.numeric, round_half_up, digits = 2) |>
+  kable() |>
+  add_header_above(header = c(" " = 1, "Self-reported evaluations" = 3)) |>
+  kable_classic(full_width = FALSE)
 
 ```
 
-
 ### Descriptive plot
-  
-```{r}
 
-#plot providing a visual representation of the distribution of self reported mean evaluation. "Frequency" shows how many times a certain range of values of mean evaluations were reported
+```{r}
 
 ggplot(data_processed_after_exclusions, aes(x = mean_evaluation)) +
   geom_histogram(binwidth = 1,
@@ -175,7 +174,6 @@ ggplot(data_processed_after_exclusions, aes(x = mean_evaluation)) +
 ### Descriptive plots
 
 ```{r}
-##plot providing a visual representation of the distribution of the AMP_Score. "Frequency" shows how many times a certain range of values of mean evaluations were reported
 
 ggplot(data_processed_after_exclusions, aes(x = AMP_score)) +
   geom_histogram(binwidth = 0.05,
@@ -190,8 +188,6 @@ ggplot(data_processed_after_exclusions, aes(x = AMP_score)) +
 ```
 
 # Analyses & hypothesis tests
-
-#TODO!!
 
 ## Self-reported evaluations are correlated with evaluations on the AMP
 
@@ -378,16 +374,6 @@ p + geom_magnify(from = from, to = to)
 \TODO 
 
 ## Self-reported evalautions differ between men and women
-```{r}
-
-#First create a table only with the mean_evaluation of the self_report and gender 
-
-t_test_result <- t.test(data_selfreport_mean_score$mean_evaluation ~ gender, data = data_amp_raw)
-print(t_test_result)
-
-
-```
-
 
 ### Plot
 
@@ -437,9 +423,6 @@ print(t_test_result)
 print(p_raincloud)
 
 ```
-
-
-
 #Same plot but potentially with better readability: 
 
 ```{r}
@@ -501,7 +484,6 @@ print(p_raincloud)
 This time, vary the labeling and order of the legend, e.g., capitalise "Men" and "Women", and know how to change the order of the factors.
 
 
-
 ```{r}
 # Install and load required packages
 if (!require('ggplot2')) {
@@ -548,22 +530,6 @@ p_raincloud <- ggplot(data_processed_after_exclusions, aes(x = gender, y = mean_
 print(p_raincloud)
 
 ```
-
-
-
-### Test
-
-\TODO run an appropriate test. Below the output, print an interpretation of the results generated by the 'easystats' package [report](https://easystats.github.io/report/). I.e., use `report::report()`.
-```{r}
-install.packages("report")
-
-library(report)
-
-report(data_amp_score)
-
-
-```
-
 
 
 
